@@ -1,29 +1,29 @@
-// src/utils/SmartBarDetector.js
+// src/utils/SmartBarcodeDetector.js
 
-export default function detectBarsFromImage(imageData, canvas) {
+export async function detectBarsFromImage(imageData, canvas) {
   const cv = window.cv;
 
   const src = cv.matFromImageData(imageData);
   const gray = new cv.Mat();
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-  // Gaussian Blur
+  // Apply Gaussian Blur to remove noise
   const blurred = new cv.Mat();
   cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
 
-  // Vertical Projection
+  // Sum pixel intensities along the Y axis (vertical projection)
   const columnSums = [];
   for (let x = 0; x < blurred.cols; x++) {
     let sum = 0;
     for (let y = 0; y < blurred.rows; y++) {
-      sum += blurred.ucharPtr(y, x)[0];
+      sum += blurred.ucharPtr(y, x)[0]; // Grayscale intensity
     }
     columnSums.push(sum);
   }
 
   const minSum = Math.min(...columnSums);
   const maxSum = Math.max(...columnSums);
-  const threshold = minSum + (maxSum - minSum) * 0.4;
+  const threshold = minSum + (maxSum - minSum) * 0.4; // Controls sensitivity
 
   const barCenters = [];
   let inBar = false;
@@ -47,6 +47,7 @@ export default function detectBarsFromImage(imageData, canvas) {
   const totalWidth = canvas.width;
   const totalHeight = canvas.height;
 
+  // Sort and center bars
   const sortedBars = barCenters.sort((a, b) => a - b);
   let selectedBars = sortedBars;
 

@@ -100,147 +100,63 @@
 
 // ✅ src/components/ImageScanner.jsx
 // ✅ src/components/ImageScanner.jsx
-import React, { useRef } from 'react';
+// src/components/ImageScanner.jsx
+import React, { useState } from 'react';
+import { detectBarsFromImage } from '../utils/SmartBarcodeDetector';
 
 export default function ImageScanner({ onScanSuccess, cvReady }) {
-  const fileInputRef = useRef();
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
 
   const handleImageUpload = (e) => {
+    if (!cvReady) {
+      alert('Scanner is still loading. Please wait.');
+      return;
+    }
+
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      processImage(file);
-    } else {
-      alert('Please upload a valid image file.');
-    }
-  };
+    if (!file) return;
 
-  const processImage = (file) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      setPreview(img.src);
 
-      // ✅ Resize image to a consistent width
-      const targetWidth = 500; // Standard width for processing
-      const scale = targetWidth / img.width;
-      canvas.width = targetWidth;
-      canvas.height = img.height * scale;
+      img.onload = async () => {
+        try {
+          setLoading(true);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
 
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
 
-      try {
-        const detectedBars = detectBars(imageData, canvas);
-        onScanSuccess(detectedBars);
-      } catch (error) {
-        alert(error.message);
-      }
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const detectedBars = await detectBarsFromImage(imageData, canvas);
+
+          onScanSuccess(detectedBars);
+        } catch (error) {
+          alert(error.message || 'Failed to detect barcode.');
+        } finally {
+          setLoading(false);
+        }
+      };
     };
-    img.src = URL.createObjectURL(file);
+    reader.readAsDataURL(file);
   };
-
-    const detectBars = (imageData, canvas) => {
-    const cv = window.cv;
-
-    const src = cv.matFromImageData(imageData);
-    const gray = new cv.Mat();
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-    // ✅ Apply Otsu’s Thresholding for universal compatibility
-    const thresholded = new cv.Mat();
-    cv.threshold(gray, thresholded, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
-
-    // ✅ Sum pixel intensities vertically
-    const columnSums = [];
-    for (let x = 0; x < thresholded.cols; x++) {
-        let sum = 0;
-        for (let y = 0; y < thresholded.rows; y++) {
-        sum += thresholded.ucharPtr(y, x)[0];
-        }
-        columnSums.push(sum);
-    }
-
-    // ✅ Smart bar detection
-    const barCenters = [];
-    let inBar = false;
-    let barStart = 0;
-    const threshold = Math.max(...columnSums) * 0.3;
-
-    for (let x = 0; x < columnSums.length; x++) {
-        if (columnSums[x] > threshold && !inBar) {
-        inBar = true;
-        barStart = x;
-        } else if ((columnSums[x] <= threshold || x === columnSums.length - 1) && inBar) {
-        inBar = false;
-        const barCenter = (barStart + x - 1) / 2;
-        barCenters.push(barCenter);
-        }
-    }
-
-    if (barCenters.length < 10) {
-        throw new Error('Not enough bars detected. Try a clearer image.');
-    }
-
-    // ✅ Always select 24 bars, centered
-    const sortedBars = barCenters.sort((a, b) => a - b);
-    let selectedBars = sortedBars;
-
-    if (sortedBars.length > 24) {
-        const start = Math.floor((sortedBars.length - 24) / 2);
-        selectedBars = sortedBars.slice(start, start + 24);
-    }
-
-    // ✅ Measure heights precisely
-    const barSignature = selectedBars.map(centerX => {
-        let topY = 0;
-        let bottomY = gray.rows - 1;
-
-        for (let y = 0; y < gray.rows; y++) {
-        if (thresholded.ucharPtr(y, Math.floor(centerX))[0] === 255) {
-            topY = y;
-            break;
-        }
-        }
-
-        for (let y = gray.rows - 1; y >= 0; y--) {
-        if (thresholded.ucharPtr(y, Math.floor(centerX))[0] === 255) {
-            bottomY = y;
-            break;
-        }
-        }
-
-        const barHeight = bottomY - topY;
-
-        return {
-        position: (centerX / canvas.width) * 100,
-        height: (barHeight / canvas.height) * 100
-        };
-    });
-
-    // ✅ Cleanup
-    src.delete();
-    gray.delete();
-    thresholded.delete();
-
-    return barSignature;
-    };
-
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center gap-4">
       <input
         type="file"
         accept="image/*"
-        ref={fileInputRef}
         onChange={handleImageUpload}
-        className="mb-4"
+        className="bg-gray-700 text-white p-2 rounded cursor-pointer"
       />
-      <button
-        onClick={() => fileInputRef.current.click()}
-        className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded"
-      >
-        Upload Image for Scanning
-      </button>
+      {loading && <p className="text-yellow-400">Scanning in progress...</p>}
+      {preview && <img src={preview} alt="Preview" className="max-w-xs border p-2 rounded" />}
     </div>
   );
 }

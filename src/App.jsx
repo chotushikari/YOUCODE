@@ -206,19 +206,20 @@ export default function App() {
   };
 
   // ✅ Handle scanner result
-  const handleScanSuccess = (detectedBars) => {
-    const normalizedScanned = normalizeBars(detectedBars);
+ const handleScanSuccess = (detectedBars) => {
+  const normalizedScanned = normalizeBars(detectedBars);
 
-    const matched = storedBarcodes.find(item =>
-      compareBarSequences(normalizedScanned, item.bars)
-    );
+  const matched = storedBarcodes.find(item =>
+    compareBarSequences(normalizedScanned, item.bars)
+  );
 
-    if (matched) {
-      window.location.href = `https://www.youtube.com/watch?v=${matched.videoId}`;
-    } else {
-      alert('No matching YouTube video found.');
-    }
-  };
+  if (matched) {
+    window.location.href = `https://www.youtube.com/watch?v=${matched.videoId}`;
+  } else {
+    alert('No matching YouTube video found.');
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex flex-col items-center justify-center gap-8 p-6">
