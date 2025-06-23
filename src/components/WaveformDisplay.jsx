@@ -97,70 +97,86 @@
 //   );
 // }
 // src/components/WaveformDisplay.jsx
-import { downloadPNG, downloadSVG } from '../utils/SVGDownloader';
+// src/components/WaveformDisplay.jsx
+// src/components/WaveformDisplay.jsx
+import { downloadSVG, downloadSVGAsPNG } from '../utils/SVGDownloader';
+// Correct modern import
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function WaveformDisplay({
   bars,
   barColor = '#00CFFF',
   bgColor = '#121212',
   iconColor = '#FF0000',
-  shortCode
+  youtubeUrl
 }) {
   return (
-    <div className="flex items-center justify-center p-6 rounded-xl" style={{ backgroundColor: bgColor }}>
-      <svg
-        className="waveform-svg w-full h-auto max-w-[600px]"
-        viewBox="0 0 500 120"
-        preserveAspectRatio="xMinYMid meet"
-      >
-        {/* YouTube Icon */}
-        <g transform="translate(20, 10) scale(1.2)">
-          <path
-            fill={iconColor}
-            d="M45.4 14.7c-.5-1.9-2-3.4-3.9-3.9C38.1 10 24 10 24 10s-14.1 0-17.5.8c-1.9.5-3.4 2-3.9 3.9C2 18.1 2 25 2 25s0 6.9.6 10.3c.5 1.9 2 3.4 3.9 3.9C9.9 40 24 40 24 40s14.1 0 17.5-.8c1.9-.5 3.4-2 3.9-3.9.6-3.4.6-10.3.6-10.3s0-6.9-.6-10.3zM19 31V19l12 6-12 6z"
-          />
-        </g>
-
-        {/* Waveform Bars */}
-        {bars.map((bar, index) => (
-          <rect
-            key={index}
-            x={100 + index * 14}
-            y={(80 - bar.height) / 2}
-            width={8}
-            height={bar.height}
-            rx={5}
-            fill={barColor}
-          />
-        ))}
-
-        {/* Short Code Display */}
-        <text
-          x="250"
-          y="110"
-          textAnchor="middle"
-          fontSize="20"
-          fill={barColor}
-          style={{ fontFamily: 'monospace', letterSpacing: '5px' }}
+    <div className="relative flex flex-col items-center justify-center p-6 rounded-xl" style={{ backgroundColor: bgColor }}>
+      <div className="relative">
+        <svg
+          className="waveform-svg w-full h-auto max-w-[600px]"
+          viewBox="0 0 500 100"
+          preserveAspectRatio="xMinYMid meet"
         >
-          {shortCode}
-        </text>
-      </svg>
+          {/* YouTube Icon */}
+          <g transform="translate(20, 10) scale(1.2)">
+            <path
+              fill={iconColor}
+              d="M45.4 14.7c-.5-1.9-2-3.4-3.9-3.9C38.1 10 24 10 24 10s-14.1 0-17.5.8c-1.9.5-3.4 2-3.9 3.9C2 18.1 2 25 2 25s0 6.9.6 10.3c.5 1.9 2 3.4 3.9 3.9C9.9 40 24 40 24 40s14.1 0 17.5-.8c1.9-.5 3.4-2 3.9-3.9.6-3.4.6-10.3.6-10.3s0-6.9-.6-10.3zM19 31V19l12 6-12 6z"
+            />
+          </g>
 
-      {/* Download Options */}
+          {/* Center-Out Bars */}
+          {bars.map((bar, index) => (
+            <rect
+              key={index}
+              x={100 + index * 14}
+              y={(80 - bar.height) / 2}
+              width={8}
+              height={bar.height}
+              rx={5}
+              fill={barColor}
+            />
+          ))}
+        </svg>
+
+        {/* Transparent QR Outline (Displayed outside SVG) */}
+        <div className="absolute top-2 right-2 opacity-10 pointer-events-none">
+          <QRCodeSVG
+            value={youtubeUrl}
+            size={30}
+            level="H"
+            bgColor="transparent"
+            fgColor={barColor}
+          />
+        </div>
+      </div>
+
+      {/* Tiny Fully Visible QR in Corner */}
+      <div className="absolute bottom-6 right-6 bg-white p-1 rounded">
+        <QRCodeSVG
+          value={youtubeUrl}
+          size={30}
+          level="H"
+          bgColor="white"
+          fgColor="black"
+        />
+      </div>
+
+      {/* Download Buttons */}
       <div className="flex gap-4 mt-4">
         <button
-          onClick={() => downloadPNG(document.querySelector('.waveform-svg'))}
+          onClick={() => downloadSVG(document.querySelector('.waveform-svg'))}
           className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
         >
-          Download PNG
+          Download SVG
         </button>
 
         <button
-          onClick={() => downloadSVG(document.querySelector('.waveform-svg'))}
+          onClick={() => downloadSVGAsPNG(document.querySelector('.waveform-svg'))}
           className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
         >
-          Download SVG
+          Download PNG
         </button>
       </div>
     </div>

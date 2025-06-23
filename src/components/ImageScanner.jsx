@@ -107,49 +107,51 @@ import React, { useState } from 'react';
 import Tesseract from 'tesseract.js';
 
 export default function ImageScanner({ onScanSuccess }) {
-  const [image, setImage] = useState(null);
-  const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
     if (!file) return;
 
-    const imageURL = URL.createObjectURL(file);
-    setImage(imageURL);
-    setScanning(true);
-    setResult('Scanning...');
+    if (!file.type.startsWith('image/png') && !file.type.startsWith('image/jpeg')) {
+      alert('Please upload a PNG or JPG file.');
+      return;
+    }
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      scanImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const scanImage = async (imageData) => {
+    setLoading(true);
     try {
-      const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+      const result = await Tesseract.recognize(imageData, 'eng', {
         logger: m => console.log(m)
       });
+      const detectedText = result.data.text.trim();
+      console.log('Detected Text:', detectedText);
 
-      console.log('Detected Text:', text);
-      const cleanedText = text.replace(/[^A-Z0-9]/gi, '').trim();
-
-      if (cleanedText.length === 0) {
-        setResult('No code detected. Try a clearer image.');
-        setScanning(false);
-        return;
+      if (detectedText.length > 0) {
+        const videoId = detectedText.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 11); // Basic cleaning
+        window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
+      } else {
+        alert('No valid code detected. Try again with a clearer image.');
       }
-
-      setResult(`Code Detected: ${cleanedText}`);
-      setScanning(false);
-      onScanSuccess(cleanedText);
     } catch (err) {
       console.error('Error scanning image:', err);
-      setResult('Error scanning image.');
-      setScanning(false);
+      alert('Error scanning image. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <input type="file" accept="image/*" onChange={handleImageUpload} className="mb-4" />
-      {scanning && <p className="text-yellow-400">Scanning in progress...</p>}
-      {result && <p className="text-green-400">{result}</p>}
-      {image && <img src={image} alt="Uploaded Preview" className="max-w-sm rounded" />}
+      <input type="file" accept="image/png, image/jpeg" onChange={handleImageUpload} />
+      {loading && <p>Scanning in progress…</p>}
     </div>
   );
 }
