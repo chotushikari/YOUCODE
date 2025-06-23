@@ -101,62 +101,55 @@
 // ✅ src/components/ImageScanner.jsx
 // ✅ src/components/ImageScanner.jsx
 // src/components/ImageScanner.jsx
+// src/components/ImageScanner.jsx
+// src/components/ImageScanner.jsx
 import React, { useState } from 'react';
-import { detectBarsFromImage } from '../utils/SmartBarDetector';
+import Tesseract from 'tesseract.js';
 
-export default function ImageScanner({ onScanSuccess, cvReady }) {
-  const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState(null);
+export default function ImageScanner({ onScanSuccess }) {
+  const [image, setImage] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState('');
 
-  const handleImageUpload = (e) => {
-    if (!cvReady) {
-      alert('Scanner is still loading. Please wait.');
-      return;
-    }
-
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      setPreview(img.src);
+    const imageURL = URL.createObjectURL(file);
+    setImage(imageURL);
+    setScanning(true);
+    setResult('Scanning...');
 
-      img.onload = async () => {
-        try {
-          setLoading(true);
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
+    try {
+      const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+        logger: m => console.log(m)
+      });
 
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
+      console.log('Detected Text:', text);
+      const cleanedText = text.replace(/[^A-Z0-9]/gi, '').trim();
 
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const detectedBars = await detectBarsFromImage(imageData, canvas);
+      if (cleanedText.length === 0) {
+        setResult('No code detected. Try a clearer image.');
+        setScanning(false);
+        return;
+      }
 
-          onScanSuccess(detectedBars);
-        } catch (error) {
-          alert(error.message || 'Failed to detect barcode.');
-        } finally {
-          setLoading(false);
-        }
-      };
-    };
-    reader.readAsDataURL(file);
+      setResult(`Code Detected: ${cleanedText}`);
+      setScanning(false);
+      onScanSuccess(cleanedText);
+    } catch (err) {
+      console.error('Error scanning image:', err);
+      setResult('Error scanning image.');
+      setScanning(false);
+    }
   };
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="bg-gray-700 text-white p-2 rounded cursor-pointer"
-      />
-      {loading && <p className="text-yellow-400">Scanning in progress...</p>}
-      {preview && <img src={preview} alt="Preview" className="max-w-xs border p-2 rounded" />}
+      <input type="file" accept="image/*" onChange={handleImageUpload} className="mb-4" />
+      {scanning && <p className="text-yellow-400">Scanning in progress...</p>}
+      {result && <p className="text-green-400">{result}</p>}
+      {image && <img src={image} alt="Uploaded Preview" className="max-w-sm rounded" />}
     </div>
   );
 }

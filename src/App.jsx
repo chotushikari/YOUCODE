@@ -1,45 +1,6 @@
 
-// import React, { useState, useEffect } from 'react';
-// import YouTubeInput from './components/YouTubeInput';
-// import WaveformDisplay from './components/WaveformDisplay';
-// import ImageScanner from './components/ImageScanner';
-// import CameraScanner from './components/CameraScanner';
 
-// import { extractVideoId, generateBars, getCenterOutBars } from './utils/BarcodeEngine';
-// import { generateQRCodeDataURL } from './utils/QRCodeGenerator';
-// import { normalizeBars, compareBarSequences } from './utils/BarcodeMatcher';
-
-// const storedBarcodes = []; // Simulated in-memory storage
-
-// export default function App() {
-//   const [bars, setBars] = useState([]);
-//   const [qrDataURL, setQrDataURL] = useState('');
-//   const [cvReady, setCvReady] = useState(false);
-//   const [view, setView] = useState('home'); // 'home' | 'scanner' | 'camera'
-
-//   // Load OpenCV.js
-//   useEffect(() => {
-//     if (window.cv && window.cv.Mat) {
-//       setCvReady(true);
-//       return;
-//     }
-//     const script = document.createElement('script');
-//     script.src = 'https://docs.opencv.org/4.5.0/opencv.js';
-//     script.async = true;
-//     script.onload = () => {
-//       const checkOpenCV = () => {
-//         if (window.cv && window.cv.Mat) {
-//           setCvReady(true);
-//         } else {
-//           setTimeout(checkOpenCV, 100);
-//         }
-//       };
-//       checkOpenCV();
-//     };
-//     document.head.appendChild(script);
-//   }, []);
-
-//   // Handle YouTube Link Generate
+//   // ✅ Generate YouTube barcode
 //   const handleGenerate = async (youtubeUrl) => {
 //     const videoId = extractVideoId(youtubeUrl);
 //     if (!videoId) {
@@ -51,7 +12,7 @@
 //     const centerOutBars = getCenterOutBars(rawBars);
 //     setBars(centerOutBars);
 
-//     // Save to memory
+//     // Save the signature for matching
 //     storedBarcodes.push({
 //       videoId,
 //       bars: normalizeBars(centerOutBars)
@@ -61,20 +22,21 @@
 //     setQrDataURL(qrURL);
 //   };
 
-//   // Scanner Result Handler
-//   const handleScanSuccess = (detectedBars) => {
-//     const normalizedScanned = normalizeBars(detectedBars);
+//   // ✅ Handle scanner result
+//  const handleScanSuccess = (detectedBars) => {
+//   const normalizedScanned = normalizeBars(detectedBars);
 
-//     const matched = storedBarcodes.find(item =>
-//       compareBarSequences(normalizedScanned, item.bars)
-//     );
+//   const matched = storedBarcodes.find(item =>
+//     compareBarSequences(normalizedScanned, item.bars)
+//   );
 
-//     if (matched) {
-//       window.location.href = `https://www.youtube.com/watch?v=${matched.videoId}`;
-//     } else {
-//       alert('No matching YouTube video found.');
-//     }
-//   };
+//   if (matched) {
+//     window.location.href = `https://www.youtube.com/watch?v=${matched.videoId}`;
+//   } else {
+//     alert('No matching YouTube video found.');
+//   }
+// };
+
 
 //   return (
 //     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex flex-col items-center justify-center gap-8 p-6">
@@ -82,6 +44,7 @@
 //         YouCode
 //       </h1>
 
+//       {/* Home View */}
 //       {view === 'home' && (
 //         <>
 //           <YouTubeInput onGenerate={handleGenerate} />
@@ -108,13 +71,14 @@
 //                 bars={bars}
 //                 barColor="#00CFFF"
 //                 bgColor="#121212"
-//                 qrDataURL={qrDataURL} // Optional hidden QR layer
+//                 qrDataURL={qrDataURL}
 //               />
 //             </div>
 //           )}
 //         </>
 //       )}
 
+//       {/* Image Scanner View */}
 //       {view === 'scanner' && (
 //         <div className="mt-10">
 //           <ImageScanner onScanSuccess={handleScanSuccess} cvReady={cvReady} />
@@ -127,6 +91,7 @@
 //         </div>
 //       )}
 
+//       {/* Camera Scanner View */}
 //       {view === 'camera' && (
 //         <div className="mt-10">
 //           <CameraScanner onScanSuccess={handleScanSuccess} cvReady={cvReady} />
@@ -143,47 +108,23 @@
 // }
 
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+// src/App.jsx
+import React, { useState } from 'react';
 import YouTubeInput from './components/YouTubeInput';
 import WaveformDisplay from './components/WaveformDisplay';
 import ImageScanner from './components/ImageScanner';
 import CameraScanner from './components/CameraScanner';
 
 import { extractVideoId, generateBars, getCenterOutBars } from './utils/BarcodeEngine';
-import { generateQRCodeDataURL } from './utils/QRCodeGenerator';
-import { normalizeBars, compareBarSequences } from './utils/BarcodeMatcher';
+import { normalizeBars } from './utils/BarcodeMatcher';
 
 const storedBarcodes = []; // In-memory storage for this session
 
 export default function App() {
   const [bars, setBars] = useState([]);
-  const [qrDataURL, setQrDataURL] = useState('');
-  const [cvReady, setCvReady] = useState(false);
   const [view, setView] = useState('home'); // 'home' | 'scanner' | 'camera'
 
-  // Load OpenCV.js once
-  useEffect(() => {
-    if (window.cv && window.cv.Mat) {
-      setCvReady(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://docs.opencv.org/4.5.0/opencv.js';
-    script.async = true;
-    script.onload = () => {
-      const checkOpenCV = () => {
-        if (window.cv && window.cv.Mat) {
-          setCvReady(true);
-        } else {
-          setTimeout(checkOpenCV, 100);
-        }
-      };
-      checkOpenCV();
-    };
-    document.head.appendChild(script);
-  }, []);
-
-  // ✅ Generate YouTube barcode
+  // ✅ Handle YouTube Barcode Generation
   const handleGenerate = async (youtubeUrl) => {
     const videoId = extractVideoId(youtubeUrl);
     if (!videoId) {
@@ -195,31 +136,27 @@ export default function App() {
     const centerOutBars = getCenterOutBars(rawBars);
     setBars(centerOutBars);
 
-    // Save the signature for matching
+    // Save the text code (videoId) for future scanning match
     storedBarcodes.push({
       videoId,
-      bars: normalizeBars(centerOutBars)
+      textCode: videoId.toUpperCase().replace(/[^A-Z0-9]/gi, '')
     });
-
-    const qrURL = await generateQRCodeDataURL(`https://www.youtube.com/watch?v=${videoId}`);
-    setQrDataURL(qrURL);
   };
 
-  // ✅ Handle scanner result
- const handleScanSuccess = (detectedBars) => {
-  const normalizedScanned = normalizeBars(detectedBars);
+  // ✅ Handle Scanner Match
+  const handleScanSuccess = (detectedText) => {
+    const cleanedText = detectedText.toUpperCase().replace(/[^A-Z0-9]/gi, '');
 
-  const matched = storedBarcodes.find(item =>
-    compareBarSequences(normalizedScanned, item.bars)
-  );
+    const matched = storedBarcodes.find(item =>
+      cleanedText.includes(item.textCode) // Soft text match
+    );
 
-  if (matched) {
-    window.location.href = `https://www.youtube.com/watch?v=${matched.videoId}`;
-  } else {
-    alert('No matching YouTube video found.');
-  }
-};
-
+    if (matched) {
+      window.location.href = `https://www.youtube.com/watch?v=${matched.videoId}`;
+    } else {
+      alert('No matching YouTube video found.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex flex-col items-center justify-center gap-8 p-6">
@@ -254,7 +191,6 @@ export default function App() {
                 bars={bars}
                 barColor="#00CFFF"
                 bgColor="#121212"
-                qrDataURL={qrDataURL}
               />
             </div>
           )}
@@ -264,7 +200,7 @@ export default function App() {
       {/* Image Scanner View */}
       {view === 'scanner' && (
         <div className="mt-10">
-          <ImageScanner onScanSuccess={handleScanSuccess} cvReady={cvReady} />
+          <ImageScanner onScanSuccess={handleScanSuccess} />
           <button
             onClick={() => setView('home')}
             className="mt-6 bg-red-600 hover:bg-red-700 text-white py-2 px-6 rounded"
@@ -277,7 +213,7 @@ export default function App() {
       {/* Camera Scanner View */}
       {view === 'camera' && (
         <div className="mt-10">
-          <CameraScanner onScanSuccess={handleScanSuccess} cvReady={cvReady} />
+          <CameraScanner onScanSuccess={handleScanSuccess} />
           <button
             onClick={() => setView('home')}
             className="mt-6 bg-red-600 hover:bg-red-700 text-white py-2 px-6 rounded"
