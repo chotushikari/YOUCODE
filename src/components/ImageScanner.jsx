@@ -102,7 +102,7 @@
 // ✅ src/components/ImageScanner.jsx
 // src/components/ImageScanner.jsx
 import React, { useState } from 'react';
-import { detectBarsFromImage } from '../utils/SmartBarcodeDetector';
+import { detectBarsFromImage } from '../utils/SmartBarDetector';
 
 export default function ImageScanner({ onScanSuccess, cvReady }) {
   const [loading, setLoading] = useState(false);

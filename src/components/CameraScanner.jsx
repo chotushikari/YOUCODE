@@ -1,6 +1,6 @@
 // src/components/CameraScanner.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { detectBarsFromImage } from '../utils/SmartBarcodeDetector';
+import { detectBarsFromImage } from '../utils/SmartBarDetector';
 
 export default function CameraScanner({ onScanSuccess, cvReady }) {
   const videoRef = useRef(null);
